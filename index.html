@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#FAFAF8">
+<title>Expiry Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --cream:#FAFAF8;--cream2:#F4F2EF;--cream3:#EAE6E0;
+  --stone:#2C2B28;--stone2:#5A574F;--stone3:#9B978F;--stone4:#C8C4BC;
+  --green:#2D6A4F;--green-bg:#F0F7F4;--green-dot:#4CAF82;
+  --amber:#B45309;--amber-bg:#FFFBEB;--amber-dot:#F59E0B;
+  --orange:#C2410C;--orange-bg:#FFF7ED;--orange-dot:#F97316;
+  --red:#991B1B;--red-bg:#FEF2F2;--red-dot:#EF4444;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+  --radius:20px;--radius-sm:12px;--radius-xs:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--stone);min-height:100vh;overflow-x:hidden}
+/* ── LAYOUT ── */
+.app{max-width:430px;margin:0 auto;min-height:100vh;position:relative;background:var(--cream)}
+/* ── HEADER ── */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(250,250,248,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:16px 20px 0;border-bottom:1px solid transparent}
+.topbar-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1.logo{font-family:'DM Serif Display',serif;font-size:26px;color:var(--stone);letter-spacing:-.3px}
+.stats-pill{font-size:11px;font-weight:500;color:var(--stone2);background:var(--cream2);border:1px solid var(--cream3);border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:5px}
+.stats-pill span{color:var(--stone);font-weight:600}
+/* search */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--stone3);pointer-events:none;flex-shrink:0}
+input#search{width:100%;padding:11px 14px 11px 38px;border-radius:var(--radius-sm);border:1.5px solid var(--cream3);background:white;font-family:'Inter',sans-serif;font-size:14px;color:var(--stone);outline:none;transition:border-color .15s}
+input#search::placeholder{color:var(--stone4)}
+input#search:focus{border-color:var(--stone3)}
+/* category pills */
+.cats{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:14px;margin:0 -20px;padding-left:20px;padding-right:20px}
+.cats::-webkit-scrollbar{display:none}
+.cat-pill{flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:500;border:1.5px solid var(--cream3);background:white;color:var(--stone2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.cat-pill.active{background:var(--stone);color:white;border-color:var(--stone)}
+/* ── MAIN ── */
+.main{padding:0 20px 100px}
+/* section heading */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px}
+.section-head h2{font-size:13px;font-weight:600;color:var(--stone);display:flex;align-items:center;gap:6px}
+.section-head .count{font-size:11px;font-weight:500;color:var(--stone3)}
+/* ── USE FIRST strip ── */
+.use-first-strip{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:0 20px 4px}
+.use-first-strip::-webkit-scrollbar{display:none}
+.uf-card{flex-shrink:0;width:110px;cursor:pointer}
+.uf-img{width:110px;height:140px;border-radius:16px;overflow:hidden;background:var(--cream2);position:relative;box-shadow:var(--shadow-sm)}
+.uf-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.uf-card:hover .uf-img img{transform:scale(1.04)}
+.uf-name{font-size:11px;font-weight:500;color:var(--stone);margin-top:7px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.uf-badge{font-size:10px;font-weight:600;margin-top:3px}
+/* ── PRODUCT GRID ── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:white;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-img{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--cream2)}
+.card-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.card:hover .card-img img{transform:scale(1.04)}
+.card-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(4px);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .2s;z-index:2}
+.card:hover .card-fav,.card-fav.active{opacity:1}
+.card-fav.active svg{fill:#EF4444;stroke:#EF4444}
+.expiry-badge{position:absolute;bottom:8px;left:8px;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:600;line-height:1.4}
+.card-body{padding:10px 11px 12px}
+.card-cat{font-size:10px;color:var(--stone3);font-weight:500;margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
+.card-name{font-size:12px;font-weight:500;color:var(--stone);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-date{font-size:10px;color:var(--stone3);margin-top:4px}
+/* ── STATUS COLORS ── */
+.s-expired{color:var(--red);background:var(--red-bg)}
+.s-critical{color:var(--orange);background:var(--orange-bg)}
+.s-warning{color:var(--amber);background:var(--amber-bg)}
+.s-safe{color:var(--green);background:var(--green-bg)}
+.dot-expired{color:var(--red-dot)}
+.dot-critical{color:var(--orange-dot)}
+.dot-warning{color:var(--amber-dot)}
+.dot-safe{color:var(--green-dot)}
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(250,250,248,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--cream3);z-index:200;padding:8px 0 max(env(safe-area-inset-bottom),8px)}
+.nav-inner{display:flex;align-items:flex-end;justify-content:space-around}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 16px;background:none;border:none;position:relative}
+.nav-btn svg{transition:color .15s}
+.nav-btn span{font-size:10px;font-weight:500;color:var(--stone3);transition:color .15s}
+.nav-btn.active span,.nav-btn.active svg{color:var(--stone)}
+.nav-add{width:52px;height:52px;background:var(--stone);border-radius:16px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(44,43,40,.25);margin-bottom:4px;transition:transform .15s}
+.nav-add:hover{transform:scale(1.05)}
+.notif-dot{position:absolute;top:2px;right:10px;width:7px;height:7px;background:#EF4444;border-radius:50%;border:1.5px solid var(--cream)}
+/* ── PAGES (views) ── */
+.page{display:none}
+.page.active{display:block}
+/* ── MODAL / DRAWER ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}
+.overlay.open{opacity:1;pointer-events:all}
+.drawer{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:white;border-radius:28px 28px 0 0;z-index:301;transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92vh;overflow-y:auto}
+.drawer.open{transform:translateX(-50%) translateY(0)}
+.drawer-handle{width:36px;height:4px;background:var(--cream3);border-radius:2px;margin:12px auto 0}
+.drawer-content{padding:20px 24px 32px}
+.drawer-hero{width:100%;height:260px;object-fit:cover;border-radius:20px;margin-bottom:20px;background:var(--cream2)}
+.drawer-cat{font-size:11px;font-weight:600;color:var(--stone3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.drawer-name{font-family:'DM Serif Display',serif;font-size:22px;color:var(--stone);line-height:1.2;margin-bottom:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--cream2)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:12px;color:var(--stone3)}
+.info-value{font-size:13px;font-weight:500;color:var(--stone)}
+.drawer-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.btn{padding:13px;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--stone);color:white}
+.btn-primary:hover{background:#3D3B37}
+.btn-danger{background:var(--red-bg);color:var(--red)}
+.btn-danger:hover{background:#FEE2E2}
+.btn-full{grid-column:1/-1}
+/* ── ALERTS PAGE ── */
+.alerts-list{padding:16px 20px 100px}
+.alert-item{background:white;border-radius:16px;padding:14px;display:flex;gap:12px;margin-bottom:10px;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .15s}
+.alert-item:hover{transform:translateY(-1px)}
+.alert-item.unread{border-left:3px solid var(--amber-dot)}
+.alert-thumb{width:52px;height:52px;border-radius:12px;object-fit:cover;background:var(--cream2);flex-shrink:0}
+.alert-body{flex:1;min-width:0}
+.alert-name{font-size:13px;font-weight:500;color:var(--stone);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert-msg{font-size:11px;color:var(--stone3)}
+.alert-time{font-size:10px;color:var(--stone4);margin-top:4px}
+.unread-dot{width:8px;height:8px;border-radius:50%;background:var(--amber-dot);flex-shrink:0;margin-top:4px}
+/* ── SETTINGS ── */
+.settings-page{padding:20px 20px 100px}
+.settings-section{margin-bottom:24px}
+.settings-label{font-size:11px;font-weight:600;color:var(--stone3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding:0 4px}
+.settings-card{background:white;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--cream2)}
+.settings-row:last-child{border-bottom:none}
+.settings-row-label{font-size:13px;color:var(--stone)}
+.toggle{width:44px;height:24px;border-radius:999px;background:var(--cream3);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--stone)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:white;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .2s}
+.toggle.on::after{left:22px}
+.settings-row-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0}
+.settings-row-left{display:flex;align-items:center}
+.danger-row{color:var(--red)}
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:500;color:var(--stone);margin-bottom:6px}
+.empty p{font-size:13px;color:var(--stone3);line-height:1.5}
+/* ── ADD FORM ── */
+.add-page{padding:20px 20px 100px}
+.add-step{display:none}
+.add-step.active{display:block}
+.step-indicator{display:flex;gap:6px;margin-bottom:28px}
+.step-bar{flex:1;height:3px;border-radius:2px;background:var(--cream3);transition:background .3s}
+.step-bar.done{background:var(--stone)}
+.upload-zone{border:2px dashed var(--cream3);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .15s;background:white}
+.upload-zone:hover{border-color:var(--stone3)}
+.upload-zone-icon{width:56px;height:56px;background:var(--cream2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.upload-preview{width:100%;height:280px;object-fit:cover;border-radius:var(--radius);margin-bottom:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--stone2);margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--cream3);font-family:'Inter',sans-serif;font-size:14px;color:var(--stone);background:white;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--stone3)}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cat-option{padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--cream3);background:white;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:var(--stone2);cursor:pointer;text-align:left;transition:all .15s}
+.cat-option.selected{background:var(--stone);color:white;border-color:var(--stone)}
+.btn-row{margin-top:24px}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--stone);color:white;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;z-index:400;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* image fallback */
+img.broken{opacity:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════════════════════════════════
+     HOME PAGE
+═══════════════════════════════════════ -->
+<div id="page-home" class="page active">
+  <div class="topbar">
+    <div class="topbar-title">
+      <h1 class="logo">🌿 Expiry Tracker</h1>
+      <div class="stats-pill"><span id="stat-total">0</span> products</div>
+    </div>
+    <div class="search-wrap">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search" type="search" placeholder="Search products…" autocomplete="off">
+    </div>
+    <div class="cats" id="cat-bar">
+      <button class="cat-pill active" data-cat="All">All</button>
+      <button class="cat-pill" data-cat="Cleanser">Cleanser</button>
+      <button class="cat-pill" data-cat="Serum">Serum</button>
+      <button class="cat-pill" data-cat="Moisturizer">Moisturizer</button>
+      <button class="cat-pill" data-cat="Sunscreen">Sunscreen</button>
+      <button class="cat-pill" data-cat="Body Care">Body</button>
+      <button class="cat-pill" data-cat="Hair Care">Hair</button>
+      <button class="cat-pill" data-cat="Miscellaneous">Misc</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Use First -->
+    <div id="use-first-section">
+      <div class="section-head">
+        <h2>⚠️ Use First <span id="uf-count" class="count"></span></h2>
+      </div>
+      <div class="use-first-strip" id="uf-strip"></div>
+    </div>
+
+    <!-- All products -->
+    <div class="section-head">
+      <h2>All Products</h2>
+      <span class="count" id="grid-count"></span>
+    </div>
+    <div class="grid" id="product-grid"></div>
+    <div class="empty" id="empty-state" style="display:none">
+      <div class="empty-icon">🌿</div>
+      <h3>No products found</h3>
+      <p>Try a different search or category</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ADD PAGE
+═══════════════════════════════════════ -->
+<div id="page-add" class="page">
+  <div class="topbar" style="padding-bottom:16px">
+    <div class="topbar-title">
+      <h1 class="logo" style="font-size:22px">Add Product</h1>
+      <button onclick="goBack()" style="background:none;border:none;color:var(--stone3);cursor:pointer;font-size:13px">Cancel</button>
+    </div>
+    <div class="step-indicator">
+      <div class="step-bar active done" id="sb1"></div>
+      <div class="step-bar" id="sb2"></div>
+      <div class="step-bar" id="sb3"></div>
+    </div>
+  </div>
+
+  <div class="add-page">
+    <!-- Step 1: Photo -->
+    <div class="add-step active" id="step1">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-zone-icon">
+          <svg width="24" height="24" fill="none" stroke="var(--stone3)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <p style="font-weight:500;color:var(--stone2);font-size:14px">Upload product photo</p>
+        <p style="font-size:12px;color:var(--stone3);margin-top:4px">JPG, PNG, WebP</p>
+      </div>
+      <input id="file-input" type="file" accept="image/*" style="display:none" onchange="handleFile(event)">
+    </div>
+
+    <!-- Step 2: Details -->
+    <div class="add-step" id="step2">
+      <img id="upload-preview" class="upload-preview" src="" alt="">
+      <div class="field">
+        <label>Product name</label>
+        <input id="add-name" type="text" placeholder="e.g. Foxtale Vitamin C Serum">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <div class="cat-grid" id="cat-grid">
+          <button class="cat-option" data-c="Cleanser">Cleanser</button>
+          <button class="cat-option" data-c="Serum">Serum</button>
+          <button class="cat-option" data-c="Moisturizer">Moisturizer</button>
+          <button class="cat-option" data-c="Sunscreen">Sunscreen</button>
+          <button class="cat-option" data-c="Body Care">Body Care</button>
+          <button class="cat-option" data-c="Hair Care">Hair Care</button>
+          <button class="cat-option" data-c="Miscellaneous" style="grid-column:1/-1">Miscellaneous</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" style="width:100%" onclick="goStep3()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Expiry -->
+    <div class="add-step" id="step3">
+      <div style="background:var(--cream2);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px" id="step3-preview"></div>
+      <div class="field">
+        <label>Expiry date</label>
+        <input id="add-expiry" type="date">
+      </div>
+      <p style="font-size:12px;color:var(--stone3);margin-bottom:24px">Leave blank and add later if you don't know yet.</p>
+      <button class="btn btn-primary" style="width:100%" onclick="saveProduct()">Save product</button>
+      <button style="width:100%;background:none;border:none;color:var(--stone3);font-size:13px;margin-top:12px;cursor:pointer;padding:8px" onclick="saveProduct()">Skip expiry for now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ALERTS PAGE
+═══════════════════════════════════════ -->
+<div id="page-alerts" class="page">
+  <div class="topbar" style="padding-bottom:16px">
+    <div class="topbar-title">
+      <h1 class="logo" style="font-size:22px">Alerts</h1>
+      <button onclick="markAllRead()" style="background:none;border:1.5px solid var(--cream3);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--stone2);cursor:pointer">Mark all read</button>
+    </div>
+  </div>
+  <div class="alerts-list" id="alerts-list"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SETTINGS PAGE
+═══════════════════════════════════════ -->
+<div id="page-settings" class="page">
+  <div class="topbar" style="padding-bottom:16px">
+    <div class="topbar-title">
+      <h1 class="logo" style="font-size:22px">Settings</h1>
+    </div>
+  </div>
+  <div class="settings-page">
+
+    <div class="settings-section">
+      <p class="settings-label">Notify me when product expires in</p>
+      <div class="settings-card">
+        <div class="settings-row"><span class="settings-row-label">5 months</span><button class="toggle on" id="t5" onclick="toggleSetting('notify5',this)"></button></div>
+        <div class="settings-row"><span class="settings-row-label">4 months</span><button class="toggle on" id="t4" onclick="toggleSetting('notify4',this)"></button></div>
+        <div class="settings-row"><span class="settings-row-label">3 months</span><button class="toggle on" id="t3" onclick="toggleSetting('notify3',this)"></button></div>
+        <div class="settings-row"><span class="settings-row-label">2 months</span><button class="toggle on" id="t2" onclick="toggleSetting('notify2',this)"></button></div>
+        <div class="settings-row"><span class="settings-row-label">1 month</span><button class="toggle on" id="t1" onclick="toggleSetting('notify1',this)"></button></div>
+        <div class="settings-row"><span class="settings-row-label">On expiry</span><button class="toggle on" id="t0" onclick="toggleSetting('notify0',this)"></button></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <p class="settings-label">Summary</p>
+      <div class="settings-card" id="settings-summary"></div>
+    </div>
+
+    <div class="settings-section">
+      <p class="settings-label">Data</p>
+      <div class="settings-card">
+        <div class="settings-row" style="cursor:pointer" onclick="exportData()">
+          <div class="settings-row-left">
+            <div class="settings-row-icon" style="background:#EFF6FF">
+              <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <span class="settings-row-label">Export as JSON</span>
+          </div>
+          <svg width="14" height="14" fill="none" stroke="var(--stone3)" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PRODUCT DETAIL DRAWER
+═══════════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-content">
+    <img id="d-img" class="drawer-hero" src="" alt="">
+    <p class="drawer-cat" id="d-cat"></p>
+    <h2 class="drawer-name" id="d-name"></h2>
+    <div class="info-row"><span class="info-label">Category</span><span class="info-value" id="d-cat2"></span></div>
+    <div class="info-row"><span class="info-label">Expiry date</span><span class="info-value" id="d-expiry"></span></div>
+    <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="d-status"></span></div>
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="d-fav-btn" onclick="toggleFavFromDrawer()">♡ Favourite</button>
+      <button class="btn btn-danger" onclick="deleteFromDrawer()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════
+     BOTTOM NAV
+═══════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" id="nav-home" onclick="showPage('home')">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-add" onclick="showPage('add')">
+      <svg width="24" height="24" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-btn" id="nav-alerts" onclick="showPage('alerts')">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Alerts</span>
+      <div class="notif-dot" id="notif-dot" style="display:none"></div>
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="showPage('settings')">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </div>
+</nav>
+
+</div><!-- .app -->
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const RAW = [{"id": 1, "image": "images/IMG-20260622-WA0025.jpg", "name": "Dot & Key Watermelon Cooling Icy Gel Moisturizer", "category": "Moisturizer", "expiry": "2028-03-25", "favorite": false}, {"id": 2, "image": "images/IMG-20260622-WA0029.jpg", "name": "Dot & Key Vitamin C+E Super Bright Moisturizer", "category": "Moisturizer", "expiry": "2027-02-25", "favorite": false}, {"id": 3, "image": "images/IMG-20260622-WA0033.jpg", "name": "Rivela Dermascience Gentle Skin Cleanser", "category": "Cleanser", "expiry": "EXPIRED", "favorite": false}, {"id": 4, "image": "images/IMG-20260622-WA0034.jpg", "name": "Dot & Key Watermelon Cooling Sunscreen Aqua-Gel SPF 50+", "category": "Sunscreen", "expiry": "2027-03-25", "favorite": false}, {"id": 5, "image": "images/IMG-20260622-WA0037.jpg", "name": "Foxtale Vitamin C Brightening Serum", "category": "Serum", "expiry": "2027-04-25", "favorite": false}, {"id": 6, "image": "images/IMG-20260622-WA0038.jpg", "name": "Dot & Key Vitamin C+E Super Bright Sunscreen SPF 50+", "category": "Sunscreen", "expiry": "2027-06-25", "favorite": false}, {"id": 7, "image": "images/IMG-20260622-WA0041.jpg", "name": "d'Alba Piedmont UV Essence Waterfull+ Tone-Up SPF 50+", "category": "Sunscreen", "expiry": "2027-11-25", "favorite": false}, {"id": 8, "image": "images/IMG-20260622-WA0044.jpg", "name": "Foxtale Hydrating Cleanser", "category": "Cleanser", "expiry": "2027-04-25", "favorite": false}, {"id": 9, "image": "images/IMG-20260622-WA0048.jpg", "name": "Bioderma Sebium Hydra Moisturizer", "category": "Moisturizer", "expiry": "2027-01-25", "favorite": false}, {"id": 10, "image": "images/IMG-20260622-WA0050.jpg", "name": "Bioderma Pigmentbio Foaming Cream Brightening Cleanser", "category": "Cleanser", "expiry": "2027-11-25", "favorite": false}, {"id": 11, "image": "images/IMG-20260622-WA0053.jpg", "name": "Dot & Key Vitamin C+E Super Bright Sunscreen SPF 50+ (2nd unit)", "category": "Sunscreen", "expiry": "2027-06-25", "favorite": false}, {"id": 12, "image": "images/IMG-20260622-WA0057.jpg", "name": "Dot & Key Vitamin C+E Super Bright Moisturizer (New Formula)", "category": "Moisturizer", "expiry": "2028-05-25", "favorite": false}, {"id": 13, "image": "images/IMG-20260622-WA0060.jpg", "name": "Dermatouch DailyGlow Bright & Even Skin Tone Face Wash", "category": "Cleanser", "expiry": "2027-04-25", "favorite": false}, {"id": 14, "image": "images/IMG-20260622-WA0063.jpg", "name": "Garnier Skin Naturals Super UV Invisible Air-Mist Sunscreen SPF 50+", "category": "Sunscreen", "expiry": "2027-02-25", "favorite": false}, {"id": 15, "image": "images/IMG-20260622-WA0066.jpg", "name": "Dr. Sheth's Ceramide & 10% Vitamin C Ampoule Serum", "category": "Serum", "expiry": "2026-10-25", "favorite": false}, {"id": 16, "image": "images/IMG-20260622-WA0069.jpg", "name": "Parnell Cicamanu 92 Serum", "category": "Serum", "expiry": "2027-04-26", "favorite": false}, {"id": 17, "image": "images/IMG-20260622-WA0072.jpg", "name": "Foxtale Super Glow Face Wash", "category": "Cleanser", "expiry": "2027-02-25", "favorite": false}, {"id": 18, "image": "images/IMG-20260622-WA0075.jpg", "name": "Garnier Super UV Invisible Air-Mist Sunscreen SPF 50+ (2nd unit)", "category": "Sunscreen", "expiry": "2027-08-25", "favorite": false}, {"id": 19, "image": "images/IMG-20260622-WA0078.jpg", "name": "Foxtale Niacinamide Clarifying Serum", "category": "Serum", "expiry": "2027-03-25", "favorite": false}, {"id": 20, "image": "images/IMG-20260622-WA0081.jpg", "name": "Dot & Key Blueberry Hydrate Barrier Repair Sunscreen SPF 50+", "category": "Sunscreen", "expiry": "2026-11-25", "favorite": false}, {"id": 21, "image": "images/IMG-20260622-WA0084.jpg", "name": "Sixam Glow Win Win Vitamin C + Rice Bran Serum", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 22, "image": "images/IMG-20260622-WA0088.jpg", "name": "Fix Derma Durave Deep Hydration Body Lotion", "category": "Body Care", "expiry": "2027-08-25", "favorite": false}, {"id": 23, "image": "images/IMG-20260622-WA0090.jpg", "name": "MARS Foundation High Coverage Formula", "category": "Miscellaneous", "expiry": "2028-07-25", "favorite": false}, {"id": 24, "image": "images/IMG-20260622-WA0093.jpg", "name": "Lakme 9 to 5 Sun Expert Dry Matte Fluid SPF 50", "category": "Sunscreen", "expiry": "2026-11-25", "favorite": false}, {"id": 25, "image": "images/IMG-20260622-WA0097.jpg", "name": "Re(d)covery Serum", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 26, "image": "images/IMG-20260622-WA0099.jpg", "name": "Dot & Key Gloss Boss Lip Balm SPF 30 Strawberry Crush", "category": "Miscellaneous", "expiry": "2027-05-25", "favorite": false}, {"id": 27, "image": "images/IMG-20260622-WA0102.jpg", "name": "Sotrue Vanity Strobe Cream 3-in-1 Gold", "category": "Miscellaneous", "expiry": "2027-04-25", "favorite": false}, {"id": 28, "image": "images/IMG-20260622-WA0106.jpg", "name": "N4N Lodhra and Lemon Peel Day Face Serum", "category": "Serum", "expiry": "2027-07-25", "favorite": false}, {"id": 29, "image": "images/IMG-20260622-WA0108.jpg", "name": "Swiss Beauty Jet Black Long Lasting Liquid Eyeliner", "category": "Miscellaneous", "expiry": "2029-05-25", "favorite": false}, {"id": 30, "image": "images/IMG-20260622-WA0111.jpg", "name": "Dot & Key 10% Vitamin C+E Super Bright Face Serum", "category": "Serum", "expiry": "2027-12-25", "favorite": false}, {"id": 31, "image": "images/IMG-20260622-WA0114.jpg", "name": "N4N Tea Tree Oil and Turmeric Anti-Acne Cream", "category": "Moisturizer", "expiry": "2027-07-25", "favorite": false}, {"id": 32, "image": "images/IMG-20260622-WA0118.jpg", "name": "Aqualogica Glow+ Mousse Night Gel", "category": "Moisturizer", "expiry": "2026-12-25", "favorite": false}, {"id": 33, "image": "images/IMG-20260622-WA0120.jpg", "name": "Swiss Beauty Eyebrow & Gel Eyeliner 2 in 1", "category": "Miscellaneous", "expiry": "2029-03-25", "favorite": false}, {"id": 34, "image": "images/IMG-20260622-WA0123.jpg", "name": "Suroskie Glow & Go Detan Clay Mask", "category": "Miscellaneous", "expiry": "2026-11-25", "favorite": false}, {"id": 35, "image": "images/IMG-20260622-WA0126.jpg", "name": "L'Oreal Professionnel Serioxyl Advanced Hair Growth Serum", "category": "Hair Care", "expiry": "2028-03-25", "favorite": false}, {"id": 36, "image": "images/IMG-20260622-WA0129.jpg", "name": "The Derma Co 5% Nia-Ceramide Intense Moisturizing Cream", "category": "Moisturizer", "expiry": "2027-03-25", "favorite": false}, {"id": 37, "image": "images/IMG-20260622-WA0132.jpg", "name": "Dot & Key 10% Vitamin C+E Super Bright Face Serum (2nd unit)", "category": "Serum", "expiry": "2027-03-25", "favorite": false}, {"id": 38, "image": "images/IMG-20260622-WA0135.jpg", "name": "CosIQ Vitamin C-23% Face Serum", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 39, "image": "images/IMG-20260622-WA0138.jpg", "name": "Bioderma Photoderm Creme SPF 50+ Claire Light", "category": "Sunscreen", "expiry": "2027-09-25", "favorite": false}, {"id": 40, "image": "images/IMG-20260622-WA0141.jpg", "name": "Dermatouch Hyaluronic Acid 1% SPF 50 PA++++ Sunscreen Gel", "category": "Sunscreen", "expiry": "2027-01-25", "favorite": false}, {"id": 41, "image": "images/IMG-20260622-WA0144.jpg", "name": "Fix Derma Fidelia Strengthening Shampoo", "category": "Hair Care", "expiry": "2026-05-25", "favorite": false}, {"id": 42, "image": "images/IMG-20260622-WA0147.jpg", "name": "Safescreen Nexgen Moisturizing Sunscreen Broad Spectrum", "category": "Sunscreen", "expiry": "EXPIRED", "favorite": false}, {"id": 43, "image": "images/IMG-20260622-WA0150.jpg", "name": "Fix Derma Shadow SPF 30+ Cream", "category": "Sunscreen", "expiry": "2026-10-25", "favorite": false}, {"id": 44, "image": "images/IMG-20260622-WA0153.jpg", "name": "Rivela Dermascience 10% Vitamin C Serum with Hyaluronic Acid", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 45, "image": "images/IMG-20260622-WA0156.jpg", "name": "Beauty of Joseon Relief Sun Aqua-fresh Rice + B5 SPF 50+", "category": "Sunscreen", "expiry": "2028-03-16", "favorite": false}, {"id": 46, "image": "images/IMG-20260622-WA0159.jpg", "name": "Dot & Key Watermelon Cooling Sunscreen SPF 50 PA+++", "category": "Sunscreen", "expiry": "EXPIRED", "favorite": false}, {"id": 47, "image": "images/IMG-20260622-WA0162.jpg", "name": "Plum Rice Water & Niacinamide 2% Hybrid Sunscreen SPF 50", "category": "Sunscreen", "expiry": "2026-12-25", "favorite": false}, {"id": 48, "image": "images/IMG-20260622-WA0165.jpg", "name": "Novology Pigmentation Reduction Bi-Phasic Serum", "category": "Serum", "expiry": "2027-04-25", "favorite": false}, {"id": 49, "image": "images/IMG-20260622-WA0168.jpg", "name": "Dear Klairs Freshly Juiced Vitamin E Mask", "category": "Moisturizer", "expiry": "2028-06-16", "favorite": false}, {"id": 50, "image": "images/IMG-20260622-WA0171.jpg", "name": "CeraVe Blemish Control Cleanser", "category": "Cleanser", "expiry": "2028-01-25", "favorite": false}, {"id": 51, "image": "images/IMG-20260622-WA0175.jpg", "name": "Dot & Key 10% Vitamin C+E Super Bright Face Serum (3rd unit)", "category": "Serum", "expiry": "2028-04-25", "favorite": false}, {"id": 52, "image": "images/IMG-20260622-WA0177.jpg", "name": "Be Bodywise 20% Urea Roll On", "category": "Body Care", "expiry": "2026-11-25", "favorite": false}, {"id": 53, "image": "images/IMG-20260622-WA0180.jpg", "name": "Swiss Beauty Craze Insta Shimmer Plumping Gloss", "category": "Miscellaneous", "expiry": "2028-07-25", "favorite": false}, {"id": 54, "image": "images/IMG-20260622-WA0182.jpg", "name": "Sugar Pop Ultrastay Transferproof Lipstick 04 Garnet Glam", "category": "Miscellaneous", "expiry": "2027-08-25", "favorite": false}, {"id": 55, "image": "images/IMG-20260622-WA0186.jpg", "name": "The Derma Co Nia-Ceramide Barrier Repair Face Wash", "category": "Cleanser", "expiry": "2026-10-25", "favorite": false}, {"id": 56, "image": "images/IMG-20260622-WA0189.jpg", "name": "Bioderma Sebium Gel Moussant Purifying Foaming Gel", "category": "Cleanser", "expiry": "2027-10-25", "favorite": false}, {"id": 57, "image": "images/IMG-20260622-WA0192.jpg", "name": "N4N Clove Oil and Manjishtha Night Repair Cream", "category": "Moisturizer", "expiry": "2028-04-25", "favorite": false}, {"id": 58, "image": "images/IMG-20260622-WA0194.jpg", "name": "Novology SPF 50 PA++++ Tinted Sunscreen", "category": "Sunscreen", "expiry": "2027-04-25", "favorite": false}, {"id": 59, "image": "images/IMG-20260622-WA0197.jpg", "name": "Dot & Key 72HR Hydrating Gel Moisturizer + Probiotics", "category": "Moisturizer", "expiry": "2028-03-25", "favorite": false}, {"id": 60, "image": "images/IMG-20260622-WA0200.jpg", "name": "Kiehl's Truly Targeted Blemish-Clearing Solution", "category": "Serum", "expiry": "2027-01-25", "favorite": false}, {"id": 61, "image": "images/IMG-20260622-WA0204.jpg", "name": "Foxtale Oil Balancing Moisturizer", "category": "Moisturizer", "expiry": "2027-04-25", "favorite": false}, {"id": 62, "image": "images/IMG-20260622-WA0207.jpg", "name": "TIRTIR Mask Fit Red Cushion 23N Sand", "category": "Miscellaneous", "expiry": "2027-07-24", "favorite": false}, {"id": 63, "image": "images/IMG-20260622-WA0209.jpg", "name": "Quench 96% Snail Mucin Collagen Boost Serum", "category": "Serum", "expiry": "2027-06-25", "favorite": false}, {"id": 64, "image": "images/IMG-20260622-WA0212.jpg", "name": "Dot & Key Blueberry Hydrate Barrier Repair Sunscreen SPF 50+ (2nd unit)", "category": "Sunscreen", "expiry": "2027-04-25", "favorite": false}, {"id": 65, "image": "images/IMG-20260622-WA0215.jpg", "name": "Be Bodywise Body Sunscreen Spray SPF 50 PA+++", "category": "Sunscreen", "expiry": "2027-04-25", "favorite": false}, {"id": 66, "image": "images/IMG-20260622-WA0218.jpg", "name": "Be Bodywise Ultra Light Sunscreen SPF 50+", "category": "Sunscreen", "expiry": "2027-01-25", "favorite": false}, {"id": 67, "image": "images/IMG-20260622-WA0221.jpg", "name": "Plum Oat & Ceramide Complex 100% Mineral Sunscreen SPF 50", "category": "Sunscreen", "expiry": "2027-01-25", "favorite": false}, {"id": 68, "image": "images/IMG-20260622-WA0225.jpg", "name": "Plum Green Tea & Zinc Super-Matte Sunscreen Gel SPF 50", "category": "Sunscreen", "expiry": "2026-10-25", "favorite": false}, {"id": 69, "image": "images/IMG-20260622-WA0228.jpg", "name": "L'Oreal Paris Glycolic Gloss Shine Sealing Conditioner", "category": "Hair Care", "expiry": "2028-09-25", "favorite": false}, {"id": 70, "image": "images/IMG-20260622-WA0231.jpg", "name": "Plum Cica & Hya-Betaine Vegan Mucin Essence (Box)", "category": "Serum", "expiry": "2026-11-25", "favorite": false}, {"id": 71, "image": "images/IMG-20260622-WA0233.jpg", "name": "Livon Anti-Frizz Serum Spray", "category": "Hair Care", "expiry": "2027-01-25", "favorite": false}, {"id": 72, "image": "images/IMG-20260622-WA0236.jpg", "name": "Livon Anti-Frizz Serum", "category": "Hair Care", "expiry": "2027-06-25", "favorite": false}, {"id": 73, "image": "images/IMG-20260622-WA0239.jpg", "name": "Swiss Beauty Craze Lip and Cheek Macaron", "category": "Miscellaneous", "expiry": "2026-09-25", "favorite": false}, {"id": 74, "image": "images/IMG-20260622-WA0243.jpg", "name": "Swiss Beauty Precision Mascara", "category": "Miscellaneous", "expiry": "2029-03-25", "favorite": false}, {"id": 75, "image": "images/IMG-20260622-WA0245.jpg", "name": "Miniso Bowknot Queen PlumpPout Lip Mask Berry", "category": "Miscellaneous", "expiry": "2027-11-25", "favorite": false}, {"id": 76, "image": "images/IMG-20260622-WA0248.jpg", "name": "Lakme Skin Ultime Lumi-Smooth AHA+ Facewash", "category": "Cleanser", "expiry": "2026-12-25", "favorite": false}, {"id": 77, "image": "images/IMG-20260622-WA0250.jpg", "name": "Pilgrim Mega Curl Tubing Mascara", "category": "Miscellaneous", "expiry": "2027-09-25", "favorite": false}, {"id": 78, "image": "images/IMG-20260622-WA0254.jpg", "name": "The Derma Co 2% Sali-Cinamide Anti Acne Face Wash", "category": "Cleanser", "expiry": "2026-07-25", "favorite": false}, {"id": 79, "image": "images/IMG-20260622-WA0257.jpg", "name": "Garnier Bright Complete Vitamin C Serum Cleanser", "category": "Cleanser", "expiry": "2028-03-25", "favorite": false}, {"id": 80, "image": "images/IMG-20260622-WA0260.jpg", "name": "Schwarzkopf Professional Spa Essence Hydrating Cream Masque", "category": "Hair Care", "expiry": "2028-04-25", "favorite": false}, {"id": 81, "image": "images/IMG-20260622-WA0263.jpg", "name": "L'Oreal Professionnel Absolut Repair Professional Mask", "category": "Hair Care", "expiry": "2028-05-25", "favorite": false}, {"id": 82, "image": "images/IMG-20260622-WA0266.jpg", "name": "Swiss Beauty Matte Stick Lipstick", "category": "Miscellaneous", "expiry": "2028-12-25", "favorite": false}, {"id": 83, "image": "images/IMG-20260622-WA0269.jpg", "name": "Sugar Pop Ultrastay Transferproof Lipstick 06 Autumn Amber", "category": "Miscellaneous", "expiry": "2027-09-25", "favorite": false}, {"id": 84, "image": "images/IMG-20260622-WA0272.jpg", "name": "Zudio Cloud Kiss Lip Colour", "category": "Miscellaneous", "expiry": "2027-11-25", "favorite": false}, {"id": 85, "image": "images/IMG-20260622-WA0275.jpg", "name": "Pilgrim Matte Me Up Liquid Lipstick", "category": "Miscellaneous", "expiry": "2026-10-25", "favorite": false}, {"id": 86, "image": "images/IMG-20260622-WA0278.jpg", "name": "Pilgrim Matte Me Up Liquid Lipstick (2nd unit)", "category": "Miscellaneous", "expiry": "2026-11-25", "favorite": false}, {"id": 87, "image": "images/IMG-20260622-WA0281.jpg", "name": "Be Bodywise 0.5% Ceramide Lotion", "category": "Body Care", "expiry": "2026-10-25", "favorite": false}, {"id": 88, "image": "images/IMG-20260622-WA0284.jpg", "name": "Quench 92% Snail Mucin Collagen Boost Moisturizer", "category": "Moisturizer", "expiry": "2027-06-25", "favorite": false}, {"id": 89, "image": "images/IMG-20260622-WA0287.jpg", "name": "WishCare Sunscreen Body Lotion SPF 50 PA+++", "category": "Body Care", "expiry": "2027-05-25", "favorite": false}, {"id": 90, "image": "images/IMG-20260622-WA0290.jpg", "name": "Plum Cica & Hya-Betaine Vegan Mucin Essence (Bottle)", "category": "Serum", "expiry": "2026-11-25", "favorite": false}, {"id": 91, "image": "images/IMG-20260622-WA0291.jpg", "name": "Nivea Peach Shine Caring Lip Balm", "category": "Miscellaneous", "expiry": "EXPIRED", "favorite": false}, {"id": 92, "image": "images/IMG-20260622-WA0298.jpg", "name": "Pilgrim Illuminating Moisturizer Instant Rosy Glow SPF 15", "category": "Moisturizer", "expiry": "EXPIRED", "favorite": false}, {"id": 93, "image": "images/IMG-20260622-WA0299.jpg", "name": "Dr. Sheth's Ashwagandha & Alpha Arbutin Sunscreen SPF 50+", "category": "Sunscreen", "expiry": "EXPIRED", "favorite": false}, {"id": 94, "image": "images/IMG-20260622-WA0300.jpg", "name": "Pilgrim 10% Vitamin C Face Serum", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 95, "image": "images/IMG-20260622-WA0302.jpg", "name": "Dr. Sheth's Ceramide & 15% Vitamin C Ampoule Serum", "category": "Serum", "expiry": "EXPIRED", "favorite": false}, {"id": 96, "image": "images/IMG-20260622-WA0303.jpg", "name": "Lakme 9 to 5 Sun Expert Aqua Sun Gel SPF 50 PA++++", "category": "Sunscreen", "expiry": "EXPIRED", "favorite": false}, {"id": 97, "image": "images/IMG-20260622-WA0306.jpg", "name": "Isntree Hyaluronic Acid Airy Sun Stick SPF 50+", "category": "Sunscreen", "expiry": "EXPIRED", "favorite": false}, {"id": 98, "image": "images/IMG-20260622-WA0309.jpg", "name": "Richfeel Naturals Calendula Anti Acne Face Wash", "category": "Cleanser", "expiry": "2028-08-25", "favorite": false}, {"id": 99, "image": "images/IMG-20260622-WA0312.jpg", "name": "WishCare AHA + BHA Body Lotion", "category": "Body Care", "expiry": "2026-12-25", "favorite": false}];
+
+// Load from localStorage or use defaults
+let products = JSON.parse(localStorage.getItem('sk_products') || 'null') || RAW;
+let settings = JSON.parse(localStorage.getItem('sk_settings') || '{"notify5":true,"notify4":true,"notify3":true,"notify2":true,"notify1":true,"notify0":true}');
+let alerts = JSON.parse(localStorage.getItem('sk_alerts') || '[]');
+
+function save(){
+  localStorage.setItem('sk_products', JSON.stringify(products));
+  localStorage.setItem('sk_settings', JSON.stringify(settings));
+  localStorage.setItem('sk_alerts', JSON.stringify(alerts));
+}
+
+// ═══════════════════════════════════════
+// EXPIRY LOGIC
+// ═══════════════════════════════════════
+function getExpiryInfo(expiryStr){
+  if(!expiryStr || expiryStr === 'EXPIRED') return {status:'expired',months:0,label:'Expired',cls:'s-expired',dotCls:'dot-expired'};
+  const exp = new Date(expiryStr);
+  const now = new Date();
+  const msLeft = exp - now;
+  if(msLeft <= 0) return {status:'expired',months:0,label:'Expired',cls:'s-expired',dotCls:'dot-expired'};
+  const days = Math.floor(msLeft/(1000*60*60*24));
+  const months = Math.floor(days/30.44);
+  if(days <= 31){
+    const label = days === 0 ? 'Today!' : days === 1 ? '1 day left' : days + ' days left';
+    return {status:'critical',months,label,cls:'s-critical',dotCls:'dot-critical'};
+  }
+  if(months <= 5) return {status:'warning',months,label:months+' mo left',cls:'s-warning',dotCls:'dot-warning'};
+  return {status:'safe',months,label:months+' mo left',cls:'s-safe',dotCls:'dot-safe'};
+}
+
+function formatDate(s){
+  if(!s || s==='EXPIRED') return 'Expired';
+  const d = new Date(s);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function isUseFirst(p){
+  const info = getExpiryInfo(p.expiry);
+  return info.status === 'warning' || info.status === 'critical';
+}
+
+// ═══════════════════════════════════════
+// RENDER HOME
+// ═══════════════════════════════════════
+let activeFilter = 'All';
+let searchQuery = '';
+
+function render(){
+  // Stats
+  document.getElementById('stat-total').textContent = products.length;
+
+  // Filter
+  const filtered = products.filter(p => {
+    const matchCat = activeFilter === 'All' || p.category === activeFilter;
+    const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  // Use First
+  const ufProducts = products.filter(isUseFirst).sort((a,b)=>{
+    return getExpiryInfo(a.expiry).months - getExpiryInfo(b.expiry).months;
+  });
+
+  const ufSection = document.getElementById('use-first-section');
+  ufSection.style.display = (ufProducts.length && activeFilter === 'All' && !searchQuery) ? 'block' : 'none';
+  document.getElementById('uf-count').textContent = ufProducts.length ? '· '+ufProducts.length : '';
+
+  const ufStrip = document.getElementById('uf-strip');
+  ufStrip.innerHTML = ufProducts.map(p => {
+    const info = getExpiryInfo(p.expiry);
+    return `<div class="uf-card" onclick="openDrawer(${p.id})">
+      <div class="uf-img"><img src="${p.image}" alt="${p.name}" onerror="this.style.opacity=0"></div>
+      <p class="uf-name">${p.name}</p>
+      <p class="uf-badge ${info.dotCls}">${info.label}</p>
+    </div>`;
+  }).join('');
+
+  // Grid
+  document.getElementById('grid-count').textContent = filtered.length + ' shown';
+
+  const expired = filtered.filter(p => getExpiryInfo(p.expiry).status === 'expired');
+  const active = filtered.filter(p => getExpiryInfo(p.expiry).status !== 'expired');
+  const sorted = [...active.sort((a,b)=>getExpiryInfo(a.expiry).months - getExpiryInfo(b.expiry).months), ...expired];
+
+  const grid = document.getElementById('product-grid');
+  const empty = document.getElementById('empty-state');
+
+  if(sorted.length === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    grid.innerHTML = sorted.map(p => {
+      const info = getExpiryInfo(p.expiry);
+      return `<div class="card" onclick="openDrawer(${p.id})">
+        <div class="card-img">
+          <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.opacity=0">
+          <button class="card-fav ${p.favorite?'active':''}" onclick="event.stopPropagation();toggleFav(${p.id})" title="Favourite">
+            <svg width="13" height="13" fill="${p.favorite?'#EF4444':'none'}" stroke="${p.favorite?'#EF4444':'#9B978F'}" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <div class="expiry-badge ${info.cls}">${info.label}</div>
+        </div>
+        <div class="card-body">
+          <p class="card-cat">${p.category}</p>
+          <p class="card-name">${p.name}</p>
+          <p class="card-date">${formatDate(p.expiry)}</p>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Alerts badge
+  const unread = alerts.filter(a=>!a.read).length;
+  document.getElementById('notif-dot').style.display = unread ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════
+// CATEGORY FILTER
+// ═══════════════════════════════════════
+document.getElementById('cat-bar').addEventListener('click', e=>{
+  const btn = e.target.closest('.cat-pill');
+  if(!btn) return;
+  document.querySelectorAll('.cat-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.cat;
+  render();
+});
+
+document.getElementById('search').addEventListener('input', e=>{
+  searchQuery = e.target.value;
+  render();
+});
+
+// ═══════════════════════════════════════
+// DRAWER
+// ═══════════════════════════════════════
+let drawerProductId = null;
+
+function openDrawer(id){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  drawerProductId = id;
+  const info = getExpiryInfo(p.expiry);
+  document.getElementById('d-img').src = p.image;
+  document.getElementById('d-cat').textContent = p.category;
+  document.getElementById('d-name').textContent = p.name;
+  document.getElementById('d-cat2').textContent = p.category;
+  document.getElementById('d-expiry').textContent = formatDate(p.expiry);
+  document.getElementById('d-status').innerHTML = `<span class="${info.cls}" style="padding:3px 10px;border-radius:999px;font-size:12px">${info.label}</span>`;
+  const favBtn = document.getElementById('d-fav-btn');
+  favBtn.textContent = p.favorite ? '♥ Favourited' : '♡ Favourite';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer(){
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  drawerProductId = null;
+}
+
+function toggleFavFromDrawer(){
+  if(!drawerProductId) return;
+  const p = products.find(x=>x.id===drawerProductId);
+  if(!p) return;
+  p.favorite = !p.favorite;
+  const favBtn = document.getElementById('d-fav-btn');
+  favBtn.textContent = p.favorite ? '♥ Favourited' : '♡ Favourite';
+  save(); render();
+  toast(p.favorite ? 'Added to favourites' : 'Removed from favourites');
+}
+
+function deleteFromDrawer(){
+  if(!drawerProductId) return;
+  if(!confirm('Delete this product? This cannot be undone.')) return;
+  products = products.filter(x=>x.id!==drawerProductId);
+  save(); render(); closeDrawer();
+  toast('Product deleted');
+}
+
+function toggleFav(id){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  p.favorite = !p.favorite;
+  save(); render();
+  toast(p.favorite ? '♥ Added to favourites' : 'Removed from favourites');
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+let currentPage = 'home';
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const btn = document.getElementById('nav-'+name);
+  if(btn) btn.classList.add('active');
+  currentPage = name;
+  if(name==='alerts') renderAlerts();
+  if(name==='settings') renderSettings();
+  if(name==='home') render();
+  window.scrollTo(0,0);
+}
+
+function goBack(){
+  showPage('home');
+}
+
+// ═══════════════════════════════════════
+// ADD PRODUCT
+// ═══════════════════════════════════════
+let addStep = 1;
+let newProductData = {name:'',category:'',image:'',expiry:''};
+
+function handleFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    newProductData.imageData = ev.target.result;
+    document.getElementById('upload-preview').src = ev.target.result;
+    goToStep(2);
+  };
+  reader.readAsDataURL(file);
+}
+
+function goToStep(n){
+  addStep = n;
+  document.querySelectorAll('.add-step').forEach((s,i)=>{
+    s.classList.toggle('active', i+1===n);
+  });
+  for(let i=1;i<=3;i++){
+    const bar = document.getElementById('sb'+i);
+    bar.style.background = i<=n ? 'var(--stone)' : 'var(--cream3)';
+  }
+}
+
+function goStep3(){
+  const name = document.getElementById('add-name').value.trim();
+  const cat = document.querySelector('.cat-option.selected');
+  if(!name){ toast('Please enter a product name'); return; }
+  if(!cat){ toast('Please select a category'); return; }
+  newProductData.name = name;
+  newProductData.category = cat.dataset.c;
+  document.getElementById('step3-preview').innerHTML = `<p style="font-size:11px;color:var(--stone3);font-weight:500">${newProductData.category}</p><p style="font-size:14px;font-weight:500;color:var(--stone);margin-top:2px">${newProductData.name}</p>`;
+  goToStep(3);
+}
+
+function saveProduct(){
+  const expiry = document.getElementById('add-expiry').value;
+  const id = Date.now();
+  const p = {
+    id, name: newProductData.name, category: newProductData.category,
+    image: newProductData.imageData || '',
+    expiry: expiry || null, favorite: false
+  };
+  products.unshift(p);
+  save(); render();
+  toast('✓ Product saved!');
+  showPage('home');
+  // Reset form
+  newProductData = {};
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-expiry').value = '';
+  document.querySelectorAll('.cat-option').forEach(b=>b.classList.remove('selected'));
+  goToStep(1);
+}
+
+document.getElementById('cat-grid').addEventListener('click', e=>{
+  const btn = e.target.closest('.cat-option');
+  if(!btn) return;
+  document.querySelectorAll('.cat-option').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+});
+
+// ═══════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════
+function generateAlerts(){
+  const now = new Date();
+  products.forEach(p => {
+    if(!p.expiry || p.expiry === 'EXPIRED') return;
+    const info = getExpiryInfo(p.expiry);
+    const thresholds = [5,4,3,2,1,0];
+    thresholds.forEach(t => {
+      const key = `${p.id}-${t}`;
+      const exists = alerts.find(a=>a.key===key);
+      if(exists) return;
+      const shouldAlert =
+        (t === 0 && info.status === 'expired') ||
+        (t > 0 && info.months <= t && info.status !== 'expired');
+      if(shouldAlert){
+        alerts.unshift({key, productId:p.id, months:t, time:now.toISOString(), read:false});
+      }
+    });
+  });
+  save();
+}
+
+function renderAlerts(){
+  generateAlerts();
+  const list = document.getElementById('alerts-list');
+  if(alerts.length === 0){
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><h3>No alerts yet</h3><p>We'll notify you when products near their expiry date.</p></div>`;
+    return;
+  }
+  list.innerHTML = alerts.slice(0,50).map(a => {
+    const p = products.find(x=>x.id===a.productId);
+    if(!p) return '';
+    const msg = a.months === 0 ? 'has expired' : `expires in ${a.months} month${a.months>1?'s':''}`;
+    const time = new Date(a.time).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    return `<div class="alert-item ${a.read?'':'unread'}" onclick="openAlertProduct(${a.productId},'${a.key}')">
+      <img class="alert-thumb" src="${p.image}" alt="${p.name}" onerror="this.style.opacity=0">
+      <div class="alert-body">
+        <p class="alert-name">${p.name}</p>
+        <p class="alert-msg">${p.name.split(' ')[0]} ${msg}</p>
+        <p class="alert-time">${time}</p>
+      </div>
+      ${!a.read ? '<div class="unread-dot"></div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function openAlertProduct(id, key){
+  alerts = alerts.map(a=>a.key===key ? {...a,read:true} : a);
+  save();
+  renderAlerts();
+  openDrawer(id);
+}
+
+function markAllRead(){
+  alerts = alerts.map(a=>({...a,read:true}));
+  save(); renderAlerts();
+  toast('All alerts marked as read');
+}
+
+// ═══════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════
+function toggleSetting(key, el){
+  settings[key] = !settings[key];
+  el.classList.toggle('on', settings[key]);
+  save();
+}
+
+function renderSettings(){
+  // Sync toggles
+  ['5','4','3','2','1','0'].forEach(n=>{
+    const key = 'notify'+n;
+    const el = document.getElementById('t'+n);
+    if(el) el.classList.toggle('on', settings[key]!==false);
+  });
+
+  // Summary
+  const categories = {};
+  products.forEach(p=>{ categories[p.category]=(categories[p.category]||0)+1; });
+  const expired = products.filter(p=>getExpiryInfo(p.expiry).status==='expired').length;
+  const useFirst = products.filter(isUseFirst).length;
+  const summary = document.getElementById('settings-summary');
+  summary.innerHTML = [
+    ['Total products', products.length],
+    ['Use first', useFirst],
+    ['Expired', expired],
+    ...Object.entries(categories).sort((a,b)=>b[1]-a[1])
+  ].map(([k,v])=>`<div class="settings-row"><span class="settings-row-label">${k}</span><span style="font-size:13px;font-weight:600;color:var(--stone)">${v}</span></div>`).join('');
+}
+
+function exportData(){
+  const json = JSON.stringify(products.map(({id,name,category,expiry,favorite})=>({id,name,category,expiry,favorite})), null, 2);
+  const blob = new Blob([json],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'skincare-products.json';
+  a.click();
+  toast('✓ Exported successfully');
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+generateAlerts();
+render();
+</script>
+</body>
+</html>
