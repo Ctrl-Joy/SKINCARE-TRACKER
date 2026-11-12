@@ -160,3 +160,4 @@ Auto-deploys from NAV on every push to main.
 
 Pushes to main deploy automatically through the NAV GitHub App.
 
+GitHub App deploys are working.
