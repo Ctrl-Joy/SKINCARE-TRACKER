@@ -155,3 +155,5 @@ They're built because you care about someone.
 ### Made with ❤️ for someone special.
 
 ### Built by Jimmy.
+
+Auto-deploys from NAV on every push to main.
